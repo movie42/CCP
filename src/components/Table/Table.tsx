@@ -1,15 +1,16 @@
-import React, { useEffect } from "react";
-import { TableContainer } from "./style";
+import React, { useEffect } from 'react';
+import { TableContainer } from './style';
 import {
+  ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
 
 interface TableContextProps<T> {
   data: T[];
   columns?: any[];
-  addColumns?: (columns: any[]) => void;
+  addColumns?: (columns: ColumnDef<T>[]) => void;
   onDragEnd?: () => void;
   onDragStart?: () => void;
   onDragOver?: () => void;
@@ -21,22 +22,20 @@ interface TableProps<T> extends React.HTMLAttributes<HTMLTableElement> {
   children: React.ReactNode;
 }
 
-const TableContext = React.createContext<TableContextProps<any> | null>({
-  data: [],
-  columns: [],
-});
+export const TableContext = React.createContext({});
 
 const Table = <T,>(props: TableProps<T>) => {
   const { data, children, ...TableProps } = props;
-  const [columns, setColumns] = React.useState<any[]>([]);
+  const [columns, setColumns] = React.useState<ColumnDef<T>[]>([]);
+  console.log('columns: ', columns);
   const table = useReactTable({
     data,
-    getCoreRowModel: getCoreRowModel(),
     columns,
+    getCoreRowModel: getCoreRowModel(),
   });
 
   const addColumns = (column: any) => {
-    setColumns([...columns, column]);
+    setColumns(prev => [...prev, column]);
   };
 
   const contextValue: TableContextProps<T> = { data, addColumns };
@@ -46,19 +45,19 @@ const Table = <T,>(props: TableProps<T>) => {
       {children}
       <TableContainer {...TableProps}>
         <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
+          {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
-              {headerGroup.headers.map((column) => (
+              {headerGroup.headers.map(column => (
                 <th key={column.id}>{column.id}</th>
               ))}
             </tr>
           ))}
         </thead>
         <tbody>
-          {table.getRowModel().rows.map((row) => {
+          {table.getRowModel().rows.map(row => {
             return (
               <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => {
+                {row.getVisibleCells().map(cell => {
                   return (
                     <td key={cell.id}>
                       {flexRender(
@@ -77,6 +76,7 @@ const Table = <T,>(props: TableProps<T>) => {
   );
 };
 
+// Child Component
 interface TableColProps {
   Header: string;
   accessor?: string;
@@ -84,12 +84,12 @@ interface TableColProps {
 }
 
 const TableCol = (props: TableColProps) => {
-  const { data, addColumns } = React.useContext(TableContext);
+  const { addColumns } = React.useContext(TableContext);
   const { Header, accessor, children, TableColProps } = props;
 
   useEffect(() => {
     addColumns({ Header, accessorKey: accessor });
-  }, [Header, accessor]);
+  }, []);
 
   return null;
 };
