@@ -25,9 +25,15 @@ function App() {
       {/* <Example /> */}
       {/* Log성 Table */}
       <Table data={data}>
-        <Table.Col Header="쿠폰명" accessor="couponName" />
-        <Table.Col Header="할인율" accessor="discountValue" />
-        <Table.Col Header="쿠폰 유형" accessor="couponType" />
+        <Table.Col header="쿠폰명" accessor="couponName" />
+        <Table.Col header="할인율" accessor="discountValue">
+          <Table.Cell>
+            {(cell: any) => {
+              return <span>{cell.value}</span>;
+            }}
+          </Table.Cell>
+        </Table.Col>
+        <Table.Col header="쿠폰 유형" accessor="couponType" />
       </Table>
 
       {/* DND Table */}

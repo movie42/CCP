@@ -17,18 +17,30 @@ interface TableContextProps<T> {
   onDrop?: () => void;
 }
 
-interface TableProps<T> extends React.HTMLAttributes<HTMLTableElement> {
+interface ITableProps<T> extends React.HTMLAttributes<HTMLTableElement> {
   data: T[];
   children: React.ReactNode;
+  locale?: {
+    emptyMessage?: string;
+    loading?: string;
+  };
 }
 
 export const TableContext = React.createContext({});
 
-const Table = <T,>(props: TableProps<T>) => {
-  const { data, children, ...TableProps } = props;
+const Table = <T,>(props: ITableProps<T>) => {
+  const {
+    data,
+    children,
+    locale = {
+      emptyMessage: '데이터가 없습니다.',
+      loading: '로딩중입니다.',
+    },
+    ...TableProps
+  } = props;
   const [columns, setColumns] = React.useState<ColumnDef<T>[]>([]);
   console.log('columns: ', columns);
-  const table = useReactTable({
+  const tableInstance = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
@@ -44,57 +56,72 @@ const Table = <T,>(props: TableProps<T>) => {
     <TableContext.Provider value={contextValue}>
       {children}
       <TableContainer {...TableProps}>
-        <thead>
-          {table.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map(column => (
-                <th key={column.id}>{column.id}</th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map(row => {
-            return (
-              <tr key={row.id}>
-                {row.getVisibleCells().map(cell => {
-                  return (
-                    <td key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  );
-                })}
+        <TableContainer {...TableProps}>
+          <thead>
+            {tableInstance.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map(header => (
+                  <th key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </th>
+                ))}
               </tr>
-            );
-          })}
-        </tbody>
+            ))}
+          </thead>
+          <tbody>
+            {tableInstance.getRowModel().rows.map(row => {
+              return (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map(cell => {
+                    return (
+                      <td key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </TableContainer>
       </TableContainer>
     </TableContext.Provider>
   );
 };
 
-// Child Component
+/********************************************************************** */
 interface TableColProps {
-  Header: string;
+  header: string;
   accessor?: string;
   children?: React.ReactNode;
 }
 
 const TableCol = (props: TableColProps) => {
   const { addColumns } = React.useContext(TableContext);
-  const { Header, accessor, children, TableColProps } = props;
+  const { header, accessor, children, TableColProps } = props;
 
   useEffect(() => {
-    addColumns({ Header, accessorKey: accessor });
+    addColumns({ header, accessorKey: accessor });
   }, []);
 
-  return null;
+  return children ? <>{children}</> : null;
+};
+
+const TableCell = (props: any) => {
+  const { children } = props;
+  return <>{children}</>;
 };
 
 Table.Col = TableCol;
+Table.Cell = TableCell;
 export default Table;
 
 // 데이터를 표 형식으로 볼 수 있다. (Input으로는 Record<string, any>[] 가 들어오고 output 으로는 JSX.Element)
@@ -105,10 +132,11 @@ export default Table;
  * expected use case
  * 1. 일반 적인 케이스 (Log성 table)
  * <Table data={data}>
+ *   <Table.Checkbox onChecked={() => {}} />
  *   <Table.DnD onDragEnd={() => {}} />
- *   <Table.Group title="쿠폰관련">
- *   <Table.Col accessor="couponName">쿠폰명</Table.Col>
- *   <Table.Col accessor="discountValue">할인율</Table.Col>
+ *   <Table.Group>
+ *    <Table.Col accessor="couponName">쿠폰명</Table.Col>
+ *    <Table.Col accessor="discountValue">할인율</Table.Col>
  *   </Table.Group>
  * </Table>
  *
@@ -126,19 +154,4 @@ export default Table;
  *
  * 2. 이중 header 케이스
  * <Table headerList data={data}/>
- */
-
-// 이걸 오히려 Advanced Search 컴포넌트에서 더 잘 사용 할 수 있을 것 같다
-/**
- * <AdvancedSearch>
- *   <AdvancedSearch.Row>
- *   <AdvancedSearch.CheckBox qKey="couponType" legend="쿠폰 종류">
- *     <AdvancedSearch.CheckBoxItem value="PAPER">종이쿠폰</AdvancedSearch.CheckBoxItem>
- *     <AdvancedSearch.CheckBoxItem value="DIGITAL">디지털쿠폰</AdvancedSearch.CheckBoxItem>
- *   </AdvancedSearch.CheckBox>
- *   <AdvancedSearch.Search legend="검색어">
- *     <AdvancedSearch.Select value="PAPER">쿠폰명</AdvancedSearch.Select>
- *     <AdvancedSearch.Input qKey="가변형임;;" value={formData.searchInput} placeholder="검색어 입력해라"/>
- *   </AdvancedSearch.Search>
- * </AdvancedSearch>
  */
