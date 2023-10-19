@@ -1,24 +1,18 @@
-import React, { useEffect } from 'react';
-import { TableContainer } from './style';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import React from 'react';
+import { THead, TableContainer } from './style';
 import {
+  CellContext,
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { useTableContext } from './hooks';
 
-interface TableContextProps<T> {
-  data: T[];
-  columns?: any[];
-  addColumns?: (columns: ColumnDef<T>[]) => void;
-  onDragEnd?: () => void;
-  onDragStart?: () => void;
-  onDragOver?: () => void;
-  onDrop?: () => void;
-}
-
-interface ITableProps<T> extends React.HTMLAttributes<HTMLTableElement> {
-  data: T[];
+interface ITableProps<TData> extends React.HTMLAttributes<HTMLTableElement> {
+  data: TData[];
   children: React.ReactNode;
   locale?: {
     emptyMessage?: string;
@@ -28,7 +22,7 @@ interface ITableProps<T> extends React.HTMLAttributes<HTMLTableElement> {
 
 export const TableContext = React.createContext({});
 
-const Table = <T,>(props: ITableProps<T>) => {
+const Table = <TData,>(props: ITableProps<TData>) => {
   const {
     data,
     children,
@@ -38,84 +32,91 @@ const Table = <T,>(props: ITableProps<T>) => {
     },
     ...TableProps
   } = props;
-  const [columns, setColumns] = React.useState<ColumnDef<T>[]>([]);
-  console.log('columns: ', columns);
+
+  const columns = React.Children.toArray(children)
+    .map(child => {
+      if (!React.isValidElement(child) || child.type !== Table.Col) return null;
+
+      const { accessor, header, cell, ...others } =
+        child.props as TableColProps<TData>;
+      return {
+        header,
+        accessorKey: accessor,
+        cell: cell ?? (value => value.renderValue()),
+        meta: others,
+      } as ColumnDef<TData>;
+    })
+    .filter(Boolean) as ColumnDef<TData>[];
+
   const tableInstance = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const addColumns = (column: any) => {
-    setColumns(prev => [...prev, column]);
-  };
-
-  const contextValue: TableContextProps<T> = { data, addColumns };
-
   return (
-    <TableContext.Provider value={contextValue}>
+    <TableContext.Provider value={{ data }}>
       {children}
       <TableContainer {...TableProps}>
-        <TableContainer {...TableProps}>
-          <thead>
-            {tableInstance.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {tableInstance.getRowModel().rows.map(row => {
-              return (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map(cell => {
-                    return (
-                      <td key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </TableContainer>
+        <THead>
+          {tableInstance.getHeaderGroups().map(headerGroup => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <th
+                  key={header.id}
+                  {...header.getContext().column.columnDef.meta}
+                >
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </THead>
+        <tbody>
+          {tableInstance.getRowModel().rows.map(row => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map(cell => {
+                return (
+                  <td
+                    key={cell.id}
+                    {...cell.getContext().column.columnDef.meta}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
       </TableContainer>
     </TableContext.Provider>
   );
 };
 
 /********************************************************************** */
-interface TableColProps {
-  header: string;
-  accessor?: string;
+interface TableColProps<T> {
+  className?: string;
+  header: string | React.ReactNode;
+  accessor: keyof T;
+  cell?: (value: CellContext<T, any>) => React.ReactNode;
+  align?: 'left' | 'center' | 'right';
   children?: React.ReactNode;
 }
 
-const TableCol = (props: TableColProps) => {
-  const { addColumns } = React.useContext(TableContext);
-  const { header, accessor, children, TableColProps } = props;
-
-  useEffect(() => {
-    addColumns({ header, accessorKey: accessor });
-  }, []);
+const TableCol = <T,>({ children }: TableColProps<T>) => {
+  const { data } = useTableContext();
 
   return children ? <>{children}</> : null;
 };
 
-const TableCell = (props: any) => {
+interface TableCellProps<T> {
+  children?: React.ReactNode;
+}
+
+const TableCell = <T,>(props: TableCellProps<T>) => {
   const { children } = props;
   return <>{children}</>;
 };

@@ -1,3 +1,4 @@
+import styled from 'styled-components';
 import Table from './components/Table/Table';
 
 export type CouponPaperType = {
@@ -21,22 +22,42 @@ export type CouponPaperType = {
 function App() {
   return (
     <>
-      <h1>Vite + React</h1>
-      {/* <Example /> */}
-      {/* Log성 Table */}
+      <h3>일반적인 테이블</h3>
       <Table data={data}>
         <Table.Col header="쿠폰명" accessor="couponName" />
-        <Table.Col header="할인율" accessor="discountValue">
-          <Table.Cell>
-            {(cell: any) => {
-              return <span>{cell.value}</span>;
-            }}
-          </Table.Cell>
-        </Table.Col>
-        <Table.Col header="쿠폰 유형" accessor="couponType" />
+        <Table.Col
+          header={<input type="text" placeholder="할인가격" />}
+          accessor="discountValue"
+          cell={v => `${v.renderValue().toLocaleString()} 원`}
+          className="discountValue"
+          align="right"
+        />
+        <Table.Col
+          header="사용여부"
+          accessor="isUse"
+          cell={v => (v.renderValue() ? '✅' : '❌')}
+          align="center"
+        />
       </Table>
 
-      {/* DND Table */}
+      {/* Styled Table */}
+      <h3>Styled Table</h3>
+      <S.Table data={data}>
+        <Table.Col header="쿠폰명" accessor="couponName" />
+        <Table.Col
+          header={<input type="text" placeholder="할인가격" />}
+          accessor="discountValue"
+          cell={v => `${v.renderValue().toLocaleString()} 원`}
+          className="discountValue"
+          align="right"
+        />
+        <Table.Col
+          header="사용여부"
+          accessor="isUse"
+          cell={v => (v ? '✅' : '❌')}
+          align="center"
+        />
+      </S.Table>
     </>
   );
 }
@@ -390,7 +411,7 @@ const data: CouponPaperType[] = [
     discountValue: 500,
     couponName: '분자 쿠폰',
     sortSeq: 21,
-    isUse: true,
+    isUse: false,
     useCnt: 0,
     useDate: false,
     useDateStr: '2023-07-20',
@@ -407,7 +428,7 @@ const data: CouponPaperType[] = [
     discountValue: 1000,
     couponName: '산소 쿠폰',
     sortSeq: 22,
-    isUse: true,
+    isUse: false,
     useCnt: 0,
     useDate: false,
     useDateStr: '2023-07-20',
@@ -895,3 +916,11 @@ const data: CouponPaperType[] = [
     limitCnt: 1,
   },
 ];
+
+const S = {
+  Table: styled(Table)`
+    .discountValue {
+      color: hotpink;
+    }
+  `,
+};
