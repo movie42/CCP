@@ -9,33 +9,26 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useTableContext } from './hooks';
+import TableContext, { useTableContext } from './hooks';
+import TBody from './components/TBody';
 
 interface ITableProps<TData> extends React.HTMLAttributes<HTMLTableElement> {
   data: TData[];
   children: React.ReactNode;
-  locale?: {
-    emptyMessage?: string;
-    loading?: string;
-  };
+  emptyMessage?: string;
 }
 
-export const TableContext = React.createContext({});
-
 const Table = <TData,>(props: ITableProps<TData>) => {
-  const {
-    data,
-    children,
-    locale = {
-      emptyMessage: '데이터가 없습니다.',
-      loading: '로딩중입니다.',
-    },
-    ...TableProps
-  } = props;
+  const { data, children, emptyMessage, ...TableProps } = props;
 
   const columns = React.Children.toArray(children)
     .map(child => {
-      if (!React.isValidElement(child) || child.type !== Table.Col) return null;
+      if (
+        !React.isValidElement(child) ||
+        (typeof child.type === 'function' &&
+          child.type?.displayName !== 'TableCol')
+      )
+        return null;
 
       const { accessor, header, cell, ...others } =
         child.props as TableColProps<TData>;
@@ -56,16 +49,13 @@ const Table = <TData,>(props: ITableProps<TData>) => {
 
   return (
     <TableContext.Provider value={{ data }}>
-      {children}
       <TableContainer {...TableProps}>
+        {children}
         <THead>
           {tableInstance.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map(header => (
-                <th
-                  key={header.id}
-                  {...header.getContext().column.columnDef.meta}
-                >
+                <th key={header.id}>
                   {flexRender(
                     header.column.columnDef.header,
                     header.getContext()
@@ -75,22 +65,10 @@ const Table = <TData,>(props: ITableProps<TData>) => {
             </tr>
           ))}
         </THead>
-        <tbody>
-          {tableInstance.getRowModel().rows.map(row => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map(cell => {
-                return (
-                  <td
-                    key={cell.id}
-                    {...cell.getContext().column.columnDef.meta}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
+        <TBody
+          rows={tableInstance.getRowModel().rows}
+          emptyMessage={emptyMessage}
+        />
       </TableContainer>
     </TableContext.Provider>
   );
@@ -107,10 +85,12 @@ interface TableColProps<T> {
 }
 
 const TableCol = <T,>({ children }: TableColProps<T>) => {
-  const { data } = useTableContext();
-
+  const context = useTableContext();
+  console.log('context: ', context);
   return children ? <>{children}</> : null;
 };
+
+TableCol.displayName = 'TableCol';
 
 interface TableCellProps<T> {
   children?: React.ReactNode;
@@ -121,9 +101,13 @@ const TableCell = <T,>(props: TableCellProps<T>) => {
   return <>{children}</>;
 };
 
-Table.Col = TableCol;
-Table.Cell = TableCell;
-export default Table;
+interface TableCaption {
+  children: React.ReactNode;
+}
+
+const TableCaption = ({ children }: TableCaption) => {
+  return <caption>{children}</caption>;
+};
 
 // 데이터를 표 형식으로 볼 수 있다. (Input으로는 Record<string, any>[] 가 들어오고 output 으로는 JSX.Element)
 // 데이터의 표의 간격을 지정할 수 있다.
@@ -141,18 +125,11 @@ export default Table;
  *   </Table.Group>
  * </Table>
  *
- * <Table data={data}>
- *   <Table.Header>
- *      <Table.HeaderCell accessor="couponName">쿠폰명</Table.HeaderCell>
- *      <Table.HeaderCell accessor="">할인율</Table.HeaderCell>
- *   </Table.Header>
- *   <Table.Body>
- *     <Table.Cell accessor="couponName">쿠폰명</Table.Cell>
- *     <Table.Cell accessor="">할인율</Table.Cell>
- *   </Table.Body>
- * </Table>
- *
- *
  * 2. 이중 header 케이스
  * <Table headerList data={data}/>
  */
+
+Table.Col = TableCol;
+Table.Cell = TableCell;
+Table.Caption = TableCaption;
+export default Table;

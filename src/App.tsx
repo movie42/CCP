@@ -21,9 +21,12 @@ export type CouponPaperType = {
 
 function App() {
   return (
-    <>
-      <h3>일반적인 테이블</h3>
+    <Container>
       <Table data={data}>
+        <Table.Caption>
+          <Title>일반적인 테이블 ✅</Title>
+        </Table.Caption>
+
         <Table.Col header="쿠폰명" accessor="couponName" />
         <Table.Col
           header={<input type="text" placeholder="할인가격" />}
@@ -40,9 +43,10 @@ function App() {
         />
       </Table>
 
-      {/* Styled Table */}
-      <h3>Styled Table</h3>
-      <S.Table data={data}>
+      <S_Table data={data}>
+        <Table.Caption>
+          <Title>Styled Table 🚧</Title>
+        </Table.Caption>
         <Table.Col header="쿠폰명" accessor="couponName" />
         <Table.Col
           header={<input type="text" placeholder="할인가격" />}
@@ -57,8 +61,46 @@ function App() {
           cell={v => (v ? '✅' : '❌')}
           align="center"
         />
-      </S.Table>
-    </>
+      </S_Table>
+
+      {/* Pagination */}
+      <Title>Pagination Table ❌</Title>
+      <S_Table data={data}>
+        <Table.Col header="쿠폰명" accessor="couponName" />
+        <Table.Col
+          header={<input type="text" placeholder="할인가격" />}
+          accessor="discountValue"
+          cell={v => `${v.renderValue().toLocaleString()} 원`}
+          className="discountValue"
+          align="right"
+        />
+        <Table.Col
+          header="사용여부"
+          accessor="isUse"
+          cell={v => (v ? '✅' : '❌')}
+          align="center"
+        />
+      </S_Table>
+
+      {/* No data */}
+      <Title>No data Table 🚧</Title>
+      <S_Table data={[]} emptyMessage="🧐🧐🧐 없는데요 ">
+        <Table.Col header="쿠폰명" accessor="couponName" />
+        <Table.Col
+          header={<input type="text" placeholder="할인가격" />}
+          accessor="discountValue"
+          cell={v => `${v.renderValue().toLocaleString()} 원`}
+          className="discountValue"
+          align="right"
+        />
+        <Table.Col
+          header="사용여부"
+          accessor="isUse"
+          cell={v => (v ? '✅' : '❌')}
+          align="center"
+        />
+      </S_Table>
+    </Container>
   );
 }
 
@@ -917,10 +959,26 @@ const data: CouponPaperType[] = [
   },
 ];
 
-const S = {
-  Table: styled(Table)`
-    .discountValue {
-      color: hotpink;
-    }
-  `,
-};
+const Container = styled.div`
+  width: min(680px, 100%);
+  margin-inline: auto;
+`;
+
+const Title = styled.h3`
+  font-weight: 700;
+  font-size: 1.5rem;
+`;
+
+const S_Table = styled(Table)`
+  .discountValue {
+    color: hotpink;
+  }
+
+  tr {
+    height: 2rem;
+  }
+
+  td {
+    padding: 0.5rem;
+  }
+`;
