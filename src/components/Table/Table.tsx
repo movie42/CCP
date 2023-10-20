@@ -86,7 +86,6 @@ interface TableColProps<T> {
 
 const TableCol = <T,>({ children }: TableColProps<T>) => {
   const context = useTableContext();
-  console.log('context: ', context);
   return children ? <>{children}</> : null;
 };
 
