@@ -1,80 +1,89 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import React from 'react';
-import { THead, TableContainer } from './style';
+import S from './style';
 import {
   CellContext,
   ColumnDef,
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import TableContext, { useTableContext } from './hooks';
+import TableContext from './hooks';
 import TBody from './components/TBody';
+import { cn, cond, getColumns } from './utils';
 
-interface ITableProps<TData> extends React.HTMLAttributes<HTMLTableElement> {
+type ScrollAxis = 'X' | 'Y' | 'XY';
+
+interface ITableProps<TData> extends React.HTMLAttributes<HTMLDivElement> {
   data: TData[];
   children: React.ReactNode;
-  emptyMessage?: string;
+  hasPagination?: boolean;
+  scrollable?: ScrollAxis;
+  emptyMessage?: React.ReactNode;
 }
 
+/**
+ * Table component
+ * @param {TData[]} data - Data to be displayed in the table
+ * @param {React.ReactNode} children - Table children
+ * @param {boolean} hasPagination - Whether the table has pagination
+ * @param {ScrollAxis} scrollable - Whether the table is scrollable
+ * @param {React.ReactNode} emptyMessage - Message to be displayed when the table is empty
+ * @returns {React.ReactNode} - Table component
+ */
 const Table = <TData,>(props: ITableProps<TData>) => {
-  const { data, children, emptyMessage, ...TableProps } = props;
-
-  const columns = React.Children.toArray(children)
-    .map(child => {
-      if (
-        !React.isValidElement(child) ||
-        (typeof child.type === 'function' &&
-          child.type?.displayName !== 'TableCol')
-      )
-        return null;
-
-      const { accessor, header, cell, ...others } =
-        child.props as TableColProps<TData>;
-      return {
-        header,
-        accessorKey: accessor,
-        cell: cell ?? (value => value.renderValue()),
-        meta: others,
-      } as ColumnDef<TData>;
-    })
-    .filter(Boolean) as ColumnDef<TData>[];
+  const {
+    data,
+    children,
+    emptyMessage,
+    scrollable,
+    hasPagination = false,
+    ...TableProps
+  } = props;
+  const isEmpty = data.length === 0;
+  const columns = getColumns<TData>(children) as ColumnDef<TData>[];
 
   const tableInstance = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    // getPaginationRowModel: getPaginationRowModel(),
   });
 
   return (
     <TableContext.Provider value={{ data }}>
-      <TableContainer {...TableProps}>
-        {children}
-        <THead>
-          {tableInstance.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map(header => (
-                <th key={header.id}>
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </THead>
-        <TBody
-          rows={tableInstance.getRowModel().rows}
-          emptyMessage={emptyMessage}
-        />
-      </TableContainer>
+      <S.TableContainer
+        {...TableProps}
+        className={cn(cond(!!scrollable, 'scrollable'), scrollable)}
+      >
+        <S.Table className={cond(isEmpty, 'empty')}>
+          {children}
+          <S.THead>
+            {tableInstance.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map(header => (
+                  <th key={header.id}>
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </S.THead>
+          <TBody
+            rows={tableInstance.getRowModel().rows}
+            emptyMessage={emptyMessage}
+          />
+        </S.Table>
+      </S.TableContainer>
     </TableContext.Provider>
   );
 };
 
-/********************************************************************** */
 interface TableColProps<T> {
   className?: string;
   header: string | React.ReactNode;
@@ -85,48 +94,27 @@ interface TableColProps<T> {
 }
 
 const TableCol = <T,>({ children }: TableColProps<T>) => {
-  const context = useTableContext();
   return children ? <>{children}</> : null;
 };
 
 TableCol.displayName = 'TableCol';
 
-interface TableCellProps<T> {
+interface TableCellProps {
   children?: React.ReactNode;
 }
 
-const TableCell = <T,>(props: TableCellProps<T>) => {
+const TableCell = (props: TableCellProps) => {
   const { children } = props;
   return <>{children}</>;
 };
 
-interface TableCaption {
+interface TableCaption extends React.HTMLAttributes<HTMLTableCaptionElement> {
   children: React.ReactNode;
 }
 
-const TableCaption = ({ children }: TableCaption) => {
-  return <caption>{children}</caption>;
+const TableCaption = ({ children, ...CaptionProps }: TableCaption) => {
+  return <S.Caption {...CaptionProps}>{children}</S.Caption>;
 };
-
-// 데이터를 표 형식으로 볼 수 있다. (Input으로는 Record<string, any>[] 가 들어오고 output 으로는 JSX.Element)
-// 데이터의 표의 간격을 지정할 수 있다.
-// Drag and drop 기능을 사용할 수 있다.
-// 단일, All checkbox 를 사용할 수 있다.
-/**
- * expected use case
- * 1. 일반 적인 케이스 (Log성 table)
- * <Table data={data}>
- *   <Table.Checkbox onChecked={() => {}} />
- *   <Table.DnD onDragEnd={() => {}} />
- *   <Table.Group>
- *    <Table.Col accessor="couponName">쿠폰명</Table.Col>
- *    <Table.Col accessor="discountValue">할인율</Table.Col>
- *   </Table.Group>
- * </Table>
- *
- * 2. 이중 header 케이스
- * <Table headerList data={data}/>
- */
 
 Table.Col = TableCol;
 Table.Cell = TableCell;

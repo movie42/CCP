@@ -2,14 +2,16 @@ import { Row, flexRender } from '@tanstack/react-table';
 
 interface TBodyProps<TData> {
   rows: Row<TData>[];
-  emptyMessage?: string;
+  emptyMessage?: React.ReactNode;
 }
 
 const TBody = <TData,>({
   rows,
   emptyMessage = '데이터가 없습니다. 🧐',
 }: TBodyProps<TData>) => {
-  if (rows.length === 0)
+  const isEmpty = rows.length === 0;
+
+  if (isEmpty)
     return (
       <tbody>
         <tr>
@@ -24,11 +26,13 @@ const TBody = <TData,>({
     <tbody>
       {rows.map(row => (
         <tr key={row.id}>
-          {row.getVisibleCells().map(cell => (
-            <td key={cell.id} {...cell.getContext().column.columnDef.meta}>
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </td>
-          ))}
+          {row.getVisibleCells().map(cell => {
+            return (
+              <td key={cell.id} {...cell.getContext().column.columnDef.meta}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </td>
+            );
+          })}
         </tr>
       ))}
     </tbody>

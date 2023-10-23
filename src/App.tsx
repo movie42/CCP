@@ -19,6 +19,24 @@ export type CouponPaperType = {
   limitCnt: number;
 };
 
+export enum CouponPaperKeys {
+  id = 'ID',
+  discountType = '할인타입',
+  discountValue = '할인가격',
+  couponName = '쿠폰명',
+  sortSeq = '순서',
+  isUse = '사용여부',
+  useCnt = '사용수',
+  useDate = '사용기간',
+  useDateStr = '사용기간(시작)',
+  useDateEnd = '사용기간(종료)',
+  createdAt = '생성일',
+  updatedAt = '수정일',
+  couponType = '쿠폰타입',
+  isLimit = '제한여부',
+  limitCnt = '제한수량',
+}
+
 function App() {
   return (
     <Container>
@@ -45,7 +63,28 @@ function App() {
 
       <S_Table data={data}>
         <Table.Caption>
-          <Title>Styled Table 🚧</Title>
+          <Title>Styled Table ✅</Title>
+        </Table.Caption>
+
+        <Table.Col header="쿠폰명" accessor="couponName" />
+        <Table.Col
+          header={<input type="text" placeholder="할인가격" />}
+          accessor="discountValue"
+          cell={v => `${v.renderValue().toLocaleString()} 원`}
+          className="discountValue"
+          align="right"
+        />
+        <Table.Col
+          header="사용여부"
+          accessor="isUse"
+          cell={v => (v ? '✅' : '❌')}
+          align="center"
+        />
+      </S_Table>
+
+      <Table data={data} scrollable="Y">
+        <Table.Caption>
+          <Title>Scrollable Table (Y)</Title>
         </Table.Caption>
         <Table.Col header="쿠폰명" accessor="couponName" />
         <Table.Col
@@ -61,11 +100,39 @@ function App() {
           cell={v => (v ? '✅' : '❌')}
           align="center"
         />
-      </S_Table>
+      </Table>
+
+      <Table data={data} scrollable="X">
+        <Table.Caption>
+          <Title>Scrollable Table (X)</Title>
+        </Table.Caption>
+        {Object.keys(data[0]).map(key => (
+          <Table.Col
+            key={key}
+            header={CouponPaperKeys[key as keyof typeof CouponPaperKeys]}
+            accessor={key as keyof CouponPaperType}
+          />
+        ))}
+      </Table>
+
+      <Table data={data} scrollable="XY">
+        <Table.Caption>
+          <Title>Scrollable Table (XY)</Title>
+        </Table.Caption>
+        {Object.keys(data[0]).map(key => (
+          <Table.Col
+            key={key}
+            header={key}
+            accessor={key as keyof CouponPaperType}
+          />
+        ))}
+      </Table>
 
       {/* Pagination */}
-      <Title>Pagination Table ❌</Title>
-      <S_Table data={data}>
+      <Table data={data}>
+        <Table.Caption>
+          <Title>Pagination Table ❌</Title>
+        </Table.Caption>
         <Table.Col header="쿠폰명" accessor="couponName" />
         <Table.Col
           header={<input type="text" placeholder="할인가격" />}
@@ -80,11 +147,13 @@ function App() {
           cell={v => (v ? '✅' : '❌')}
           align="center"
         />
-      </S_Table>
+      </Table>
 
       {/* No data */}
-      <Title>No data Table 🚧</Title>
-      <S_Table data={[]} emptyMessage="🧐🧐🧐 없는데요 ">
+      <Table data={[]} emptyMessage="🧐🧐🧐 없는데요 ">
+        <Table.Caption>
+          <Title>No data Table 🚧</Title>
+        </Table.Caption>
         <Table.Col header="쿠폰명" accessor="couponName" />
         <Table.Col
           header={<input type="text" placeholder="할인가격" />}
@@ -99,14 +168,14 @@ function App() {
           cell={v => (v ? '✅' : '❌')}
           align="center"
         />
-      </S_Table>
+      </Table>
     </Container>
   );
 }
 
 export default App;
 
-const data: CouponPaperType[] = [
+export const data: CouponPaperType[] = [
   {
     id: 168,
     discountType: 'AMOUNT',
@@ -960,7 +1029,10 @@ const data: CouponPaperType[] = [
 ];
 
 const Container = styled.div`
-  width: min(680px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  width: min(944px, 100%);
   margin-inline: auto;
 `;
 
@@ -970,15 +1042,5 @@ const Title = styled.h3`
 `;
 
 const S_Table = styled(Table)`
-  .discountValue {
-    color: hotpink;
-  }
-
-  tr {
-    height: 2rem;
-  }
-
-  td {
-    padding: 0.5rem;
-  }
+  color: hotpink;
 `;
